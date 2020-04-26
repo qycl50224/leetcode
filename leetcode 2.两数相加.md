@@ -266,3 +266,7 @@ class Solution {
 ```
 
 ![image-20200408230728769](C:\Users\chen\AppData\Roaming\Typora\typora-user-images\image-20200408230728769.png)
+
+![image-20200409001913121](C:\Users\chen\AppData\Roaming\Typora\typora-user-images\image-20200409001913121.png)
+
+原来打印这么肥时间啊，下面这个是去掉打印后的数据

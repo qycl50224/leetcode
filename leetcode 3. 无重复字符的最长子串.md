@@ -1,0 +1,171 @@
+# leetcode 3. 无重复字符的最长子串
+
+
+
+给定一个字符串，请你找出其中不含有重复字符的 最长子串 的长度。
+
+示例 1:
+
+输入: "abcabcbb"
+输出: 3 
+解释: 因为无重复字符的最长子串是 "abc"，所以其长度为 3。
+示例 2:
+
+输入: "bbbbb"
+输出: 1
+解释: 因为无重复字符的最长子串是 "b"，所以其长度为 1。
+示例 3:
+
+输入: "pwwkew"
+输出: 3
+解释: 因为无重复字符的最长子串是 "wke"，所以其长度为 3。
+     请注意，你的答案必须是 子串 的长度，"pwke" 是一个子序列，不是子串。
+
+### 第一印象
+
+这题我做过，然而我的第一个答案依然写了一个多两个小时，效率还很低，
+
+下面是代码
+
+```java
+import java.util.Map;
+import java.util.HashMap;
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        int length = 0;
+        int max_length = 0;
+        int head = 0;
+        int tail = 0;
+        Map<Character, Integer> map = new HashMap<Character, Integer>();
+        for(int i = 0; i < s.length(); i++){
+            char ch = s.charAt(i);
+            tail = i;
+            if(!map.containsKey(ch)) {
+                map.put(ch, i);
+                length += 1;
+                if(length > max_length) {
+                    max_length = length;
+                }
+            } else {
+                head = map.get(ch) + 1;
+                map.clear();
+                //下面这个循环是导致效率极低的原因
+                for(int j = head; j <= i; j++) {
+                    map.put(s.charAt(j), j);
+                }
+                length = map.size();
+            }
+        }
+        return max_length;
+    }
+}
+```
+
+大致思路就是
+
+有一个头和一个尾来表示这个字符串的某一节（后来知道这个方法叫滑动窗口）
+
+有一个哈希表来记录当前这节有哪些字符以及她们对应的位置，位置用于我们计算新的head
+
+发现一个表中没有的就将他加入哈希表，且length加1
+
+如果表中已经有，则可以通过表找到这个字符对应的位置，然后滑动窗口（也就是更新头的位置）
+
+然后有一个问题
+
+举一个例子吧
+
+对于`a b c d e f g c d f`，可以看到第一个重复出现的是c
+
+第一个c的index是2，也就是说我们下一步就是把head更新到d，即index=3
+
+然后问题出现了，新的窗口里面没有c前面的a和b
+
+但是哈希表里还存在这两个字符，
+
+所以我上面的代码中先把哈希表清空，再用了一个循环把新的窗口中的所有字符加入哈希表，but这个循环导致了时间复杂度的增加，
+
+解决办法等下再说
+
+先说一下我开始写时卡住的点
+
+- 一开始没考虑到上面那个问题，总以为重复后只需要head+1.。。。。
+- 一开始没想到track head，以为只需要每个都作为一个头跑一遍，然后用的Set去记录当前存在哪些字符，然后发现这样没办法跟踪窗口的左端
+- 还有就是计算length是用+1的方式，甚至一度怀疑`length=tail-head`还是`length=tail-head+1`，后来发现我之所以拿捏不定是因为这里要考虑当前的head是否已经更新
+
+
+
+下面是看了官方的滑动窗口解答之后领悟的**优化滑动窗口解答**，复杂度是n
+
+其实就是我最开始的解法除去后面那个for循环
+
+如何避免使用for呢？
+
+也就是说如何解决当我们更新head后，把head之前出现的字符剔出哈希表呢？
+
+剔除总会涉及到哈希表的各种增删操作，能不能做得更好避免这些增删呢？
+
+可以的
+
+因为我们已经记录了每个字符对应的位置
+
+我们原来的关于一个字符是否存在于表中的判断方式是用`containsKey（）`
+
+现在用另外一种方式
+
+已知我们的滑动窗口每个字符对应的值是连续的（因为这是串）
+
+如果一个重复的字符出现了，它必然有一个在滑动窗口中的字符
+
+也就是说在哈希表中这个重复字符对应的值在滑动窗口左右端对应值的闭区间中，ok基本思路到这里已经完成了
+
+代码如下
+
+
+
+```java
+import java.util.Map;
+import java.util.HashMap;
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        int length = 0;
+        int max_length = 0;
+        int head = 0;
+        int tail = 0;
+        int p = 0;
+        Map<Character, Integer> map = new HashMap<Character, Integer>();
+        for(int i = 0; i < s.length(); i++){
+            char ch = s.charAt(i);
+            tail = i;
+            if(map.get(ch) != null) {
+                p = map.get(ch);
+                if(p < head ) {
+                    map.put(ch, i);
+                    length = tail - head + 1;
+                    max_length = Math.max(max_length, length);
+                } else {
+                    //刚开始忘记了就算已经存在也要更新位置了
+                    //然后已知print把这个bug找了出来
+                    map.put(ch, i);
+                    head = p + 1;
+                    length = tail - head + 1;
+                }
+            } else {
+                map.put(ch, i);
+                length += 1;
+                max_length = Math.max(max_length, length);
+            }
+        }
+        return max_length;
+    }
+}
+```
+
+在写代码的时候也遇到了不少问题
+
+- 判断是否有重复的那个条件`p < head`一开始写的是`p < head || p >= tail`，后来发现不可能出现后者这种情况  
+
+- 上面那个注释是卡了最久的问题，解决后就通过了
+
+![image-20200410221711881](C:\Users\chen\AppData\Roaming\Typora\typora-user-images\image-20200410221711881.png)
+
